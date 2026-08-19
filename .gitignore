@@ -1,0 +1,17 @@
+#macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Run outputs
+logs/*.json
+
+# Local backup of the upstream SeLaReasoning run outputs (191M of generation traces,
+# read by nothing in this repo). Kept on disk only; fetch from upstream if ever needed.
+results_backup_selar_upstream/
+
+# GPQA is gated (Idavidrein/gpqa on HF); its authors ask that plaintext not be
+# republished, so the pre-tokenized copy stays local and out of the repository.
+datasets/gpqa_diamond_mc_test/

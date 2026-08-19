@@ -1,0 +1,4 @@
+[submodule "vllm"]
+	path = third_party/vllm
+	url = https://github.com/zhaoc5/vllm.git
+	branch = soft-thinking

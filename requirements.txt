@@ -1,0 +1,17 @@
+# Python >= 3.12
+# Qwen3.5 is a hybrid (linear + full attention) architecture and needs a transformers
+# release that ships the `qwen3_5` model type and `LinearAttentionCacheLayerMixin`.
+# 5.15.0 is the first release with both. Qwen3 alone works on much older releases;
+# pin lower only if you drop Qwen3.5 support.
+transformers>=5.15.0
+torch>=2.6.0
+accelerate>=1.0.0
+datasets>=3.0.0
+safetensors>=0.4.5
+numpy>=1.26
+tqdm>=4.66
+
+# answer extraction / grading (src/grader.py)
+math-verify>=0.9.0
+latex2sympy2_extended>=1.11.0
+sympy>=1.13
