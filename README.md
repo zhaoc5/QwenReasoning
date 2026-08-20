@@ -38,7 +38,7 @@ tokenizer and config.
 | Stop tokens | `151645`, `151643` | `248046`, `248044` |
 | Sampling temperature | 0.6 | **1.0** |
 | `presence_penalty` | — | **1.5** (Qwen3.8: **0.0**) |
-| Output length, AIME (general) | 38912 (32768) | **81920** (32768) |
+| Output length (competition / general) | 38912 / 32768 | **81920** / 32768 |
 
 `top_p 0.95`, `top_k 20`, `min_p 0.0` throughout. `scripts/run.py`'s defaults are Qwen3's —
 pass the others explicitly. Qwen3.5 and Qwen3.8 need `transformers>=5.15`. cuDNN is dropped
@@ -106,32 +106,36 @@ Speed on Qwen3.5-4B / AIME 2024 / H100: HF on 2 GPUs 99 min, vLLM on 1 GPU 23 mi
 
 ## 📊 Results
 
-AIME 2024 and 2025, 30 problems each, `--max_new_tokens 81920`, accuracy in percent.
-**avg@4 ± std** is pass@1 over seeds 0–3; `cot_greedy` is one deterministic run.
+AIME 2024 and 2025, 30 problems each, `--max_new_tokens 81920`, vLLM backend, accuracy
+in percent. **avg@8 ± std** is pass@1 over seeds 0–7; `cot_greedy` is one deterministic
+run.
 
 | Model | Method | AIME 2024 | AIME 2025 | mean tokens | no `</think>` |
 |---|---|---|---|---|---|
-| **Qwen3.5-4B** | `cot` | **89.2 ± 3.2** | **83.3 ± 9.8** | 33k / 39k | 8% / 8% |
-| | `cot_greedy` | 63.3 | 56.7 | 42k / 44k | 37% / 40% |
-| | `soft` | 73.3 ± 6.1 | 60.0 ± 2.7 | 39k / 41k | 0% / 0% |
-| **Qwen3.5-9B** | `cot` | **91.7 ± 3.3** | **87.5 ± 3.2** | 30k / 33k | 3% / 3% |
-| | `cot_greedy` | 80.0 | 63.3 | 30k / 39k | 20% / 30% |
-| | `soft` | 80.8 ± 5.0 | 71.7 ± 4.3 | 31k / 33k | 0% / 0% |
-| **Qwen3.8-27B** | `cot` | **97.5 ± 1.7** | **95.8 ± 1.7** | 18k / 19k | 2% / 2% |
+| **Qwen3.5-4B** | `cot` | **85.0 ± 2.9** | **81.7 ± 5.5** | 35k / 38k | 6% / 10% |
+| | `cot_greedy` | 56.7 | 66.7 | 50k / 37k | 47% / 27% |
+| | `soft` | 67.5 ± 3.6 | 64.6 ± 5.0 | 35k / 38k | 0% / 0% |
+| **Qwen3.5-9B** | `cot` | **91.2 ± 3.3** | **87.9 ± 2.9** | 29k / 34k | 2% / 6% |
+| | `cot_greedy` | 76.7 | 70.0 | 32k / 32k | 23% / 20% |
+| | `soft` | 82.1 ± 3.7 | 65.8 ± 2.8 | 29k / 37k | 0% / 0% |
+| **Qwen3.8-27B** | `cot` | **97.1 ± 2.6** | 95.0 ± 2.9 | 18k / 20k | 3% / 2% |
+| | `cot_greedy` | 96.7 | **100.0** | 17k / 17k | 3% / 0% |
+| | `soft` | 96.7 ± 2.4 | 99.2 ± 1.4 | 14k / 16k | 3% / 1% |
 
 Last two columns are 2024 / 2025. `cot` and `cot_greedy` run at each family's vendor
 recipe, `soft` at the one its paper tuned (T0.6/pp0.0). `scripts/length_report.py` prints
 the length and truncation columns per run.
 
-**Greedy fails by looping.** Across the four Qwen3.5 greedy runs, samples that closed their
-thinking block were correct 95.1% of the time against 2.6% for those cut off, and 34 of the
-38 cut-off traces are repetition loops. Sampling instead of argmax drops truncation to 3–8%.
+**Greedy fails by looping — until scale fixes it.** Qwen3.5 greedy cuts off 20–47% of its
+samples, mostly in repetition loops, and sampling repairs that. On 27B the loops all but
+vanish (0–3% cut off) and greedy turns competitive, including 30/30 on AIME 2025.
 
-**Scale buys shorter reasoning.** 27B averages ~18k tokens against 4B's 33–39k while scoring
-8.3 and 12.5 points higher, and truncates on 2%.
+**Scale buys shorter reasoning.** 27B averages 18–20k tokens against 4B's 35–38k while
+scoring 12–13 points higher on `cot`.
 
-**Soft Thinking underperformed CoT here** by 11–23 points everywhere, with truncation at 0%
-and no token saving, where the paper reports up to 22.4% fewer.
+**Soft Thinking scales into parity.** On Qwen3.5 it trails `cot` by 9–22 points with no
+token saving; on 27B it matches `cot` (96.7 / 99.2 against 97.1 / 95.0) at the shortest
+lengths in the table.
 
 ### Caveats
 
@@ -139,7 +143,6 @@ and no token saving, where the paper reports up to 22.4% fewer.
   sampling. A matched `cot` control at T0.6/pp0.0 is the missing run.
 - 30 problems is 3.3 points per problem, and a single seed moves by 2 problems on execution
   details alone. Only avg@N is comparable.
-- Qwen3.8-27B-FP8 does not load under transformers 5.15.
 
 ## 📁 Repository Structure
 
