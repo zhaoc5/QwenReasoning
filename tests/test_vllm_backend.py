@@ -14,20 +14,17 @@ from src.vllm_backend import SUPPORTED_METHODS, check_method_supported
 
 
 def test_unsupported_methods_are_rejected():
-    # soft is supported now: the fork implements Soft Thinking in the engine.
-    # selar and swir rewrite the running sequence, which it still cannot express.
-    for method in ("selar", "swir"):
-        try:
-            check_method_supported(method)
-        except ValueError as e:
-            assert method in str(e), e
-            assert "--backend hf" in str(e), "the error should say what to do instead"
-        else:
-            raise AssertionError(f"{method} should not be accepted by the vLLM backend")
-    for method in SUPPORTED_METHODS:
+    # All five methods run on the engine now; only unknown names are refused.
+    try:
+        check_method_supported("beam_of_dreams")
+    except ValueError as e:
+        assert "beam_of_dreams" in str(e), e
+    else:
+        raise AssertionError("an unknown method must be refused")
+    for method in ("cot", "cot_greedy", "soft", "swir", "selar"):
+        assert method in SUPPORTED_METHODS
         check_method_supported(method)
-    assert "soft" in SUPPORTED_METHODS
-    print("ok: soft is accepted, selar and swir are refused with a way out")
+    print("ok: all five methods are accepted, unknown names are refused")
 
 
 def test_hf_stems_are_unchanged():

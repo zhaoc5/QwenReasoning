@@ -164,6 +164,8 @@ def main(args):
             enforce_eager=args.enforce_eager,
             max_num_seqs=args.max_num_seqs,
             soft_thinking=method == "soft",
+            swir=method == "swir",
+            selar=method == "selar",
             reasoning_parser=args.reasoning_parser,
         )
     else:
@@ -298,6 +300,14 @@ def main(args):
             soft_topk=args.soft_topk,
             soft_entropy_threshold=args.soft_entropy_threshold,
             soft_patience=args.soft_patience,
+            swir_kwargs=vllm_backend.swir_sampling_kwargs(
+                tokenizer, model_name, alpha=alpha,
+                max_switch_count=max_switch_count,
+            ) if method == "swir" else None,
+            selar_kwargs=vllm_backend.selar_sampling_kwargs(
+                tokenizer, selar_topk=selar_topk,
+                entropy_threshold=entropy_threshold,
+            ) if method == "selar" else None,
         )
         print(f"[Rank {local_rank}] vLLM sampling params: {sampling_params}")
         all_output_ids = vllm_backend.generate_token_ids(
@@ -489,10 +499,10 @@ if __name__ == "__main__":
                         help="vLLM only: skip CUDA graph capture. Slower to decode but "
                              "starts faster and uses less memory.")
     parser.add_argument("--reasoning_parser", type=str, default="qwen3",
-                        help="vLLM only, --method soft: names the parser vLLM uses to "
-                             "resolve the thinking block's tokens. Soft Thinking needs "
-                             "</think>, and vLLM only builds a reasoning config when "
-                             "this is set.")
+                        help="vLLM only, --method soft/swir: names the parser vLLM uses "
+                             "to resolve the thinking block's tokens. Both methods need "
+                             "</think> (swir also <think>), and vLLM only builds a "
+                             "reasoning config when this is set.")
     parser.add_argument("--max_num_seqs", type=int, default=None,
                         help="vLLM only: cap on concurrent sequences (vLLM's default is "
                              "256). Qwen3.5 is hybrid, so each concurrent decode also "

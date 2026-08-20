@@ -22,8 +22,9 @@ and a method.
 | `swir` | Switches between soft and discrete thinking on entropy trends | `--alpha`, `--max_switch_count` |
 | `selar` | Gates soft embeddings on per-step normalized entropy, plus a contrastive term | `--selar_topk`, `--entropy_threshold` |
 
-`swir` and `selar` keep math symbols discrete and are HF-only. `cot`, `cot_greedy` and
-`soft` also run on vLLM via `--backend vllm`.
+`swir` and `selar` keep math symbols discrete. All five methods run on both backends;
+`--backend vllm` uses the fork's engine-side implementations of `soft`, `swir` and
+`selar`.
 
 ## 🤖 Supported Models
 
@@ -98,8 +99,9 @@ python scripts/run.py --backend vllm \
   per concurrent decode.
 - **Prefer `--dp_size` over `--tensor_parallel_size`**; both work.
 
-`--method soft` sets the three engine flags it requires: a reasoning parser, prompt embeds,
-and prefix caching off. `n > 1` and speculative decoding are refused.
+`--method soft`, `swir` and `selar` set the engine flags they require: prompt embeds,
+prefix caching off, and (for the two thinking-block methods) a reasoning parser. `n > 1`
+and speculative decoding are refused.
 
 Speed on Qwen3.5-4B / AIME 2024 / H100: HF on 2 GPUs 99 min, vLLM on 1 GPU 23 min, on
 2 GPUs 14.5–17 min.
@@ -151,7 +153,7 @@ src/       generation_utils.py  decode loops and sampling
            vllm_backend.py      vLLM route for cot / cot_greedy / soft
            grader.py  log_naming.py  hybrid_cache_compat.py
 scripts/   run.py  merge.py  length_report.py
-tests/     six scripts, no GPU or weights: `python tests/<f>.py`
+tests/     eight scripts, no GPU or weights: `python tests/<f>.py`
 datasets/  four benchmarks pre-tokenized; GPQA is built locally
 third_party/vllm/  submodule: the vLLM fork, branch soft-thinking
 ```
@@ -169,8 +171,8 @@ Four bug fixes in the code this was built from; three change results.
 3. **`swir`'s line-break embedding looked up the wrong token.**
 4. **`merge.py` matched no logs for `selar` and `swir`**, silently reporting 0% accuracy.
 
-`third_party/vllm` implements Soft Thinking inside the vLLM engine, which upstream does not
-have, and fixes an unrelated upstream bug where an incompatible `flashinfer` import kills
+`third_party/vllm` implements Soft Thinking, SwiReasoning and SeLaR inside the vLLM
+engine, which upstream does not have, and fixes an unrelated upstream bug where an incompatible `flashinfer` import kills
 every tensor-parallel run below Python 3.12. The implementation lives in vLLM's V1 GPU
 model runner; dense models default to the V2 runner, so `--method soft` pins
 `VLLM_USE_V2_MODEL_RUNNER=0` (hybrid Qwen3.5 selects V1 regardless) and the engine refuses
